@@ -39,6 +39,66 @@ npm run start
 - Vite 前端开发服务器
 - Electron 桌面主进程
 
+## 在 Windows 上使用
+
+### 方式 1：直接源码运行
+
+先安装：
+
+- Node.js 22
+- Git
+
+然后执行：
+
+```bash
+git clone git@github.com:zhangfeiyang/myshell.git
+cd myshell
+npm install
+npm run start
+```
+
+启动后输入：
+
+- Linux 主机 IP 或域名
+- SSH 端口
+- 用户名
+- 密码或私钥
+
+连接成功后，终端里执行的就是远端 Linux 的命令。
+
+### 方式 2：生成 Windows 安装包
+
+这个项目已经配置好 `electron-builder`，会生成 `NSIS` 安装包。
+
+请在 **Windows 本机** 执行：
+
+```bash
+npm install
+npm run dist:win
+```
+
+构建完成后，安装包会出现在：
+
+```bash
+release/
+```
+
+典型文件名类似：
+
+```bash
+MyShell-Setup-0.1.0.exe
+```
+
+双击安装后即可像普通 Windows 软件一样使用。
+
+### 为什么建议在 Windows 上打包
+
+Windows 安装包最稳妥的做法是在 Windows 自己构建，因为：
+
+- `NSIS` 是 Windows 安装器链路
+- 跨平台从 Linux 构建 `.exe` 经常涉及额外兼容层
+- 本项目目标本来就是 Windows 桌面交付
+
 ## 后续可扩展项
 
 - 保存主机列表
