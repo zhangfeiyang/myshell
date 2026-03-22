@@ -1,0 +1,23 @@
+{
+  "name": "myshell",
+  "version": "0.1.0",
+  "description": "A lightweight Xshell-like SSH terminal built with Electron and xterm.js",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "electron": "electron .",
+    "start": "concurrently -k \"npm:dev\" \"npm:electron\"",
+    "build:web": "vite build",
+    "build": "npm run build:web"
+  },
+  "dependencies": {
+    "ssh2": "^1.15.0",
+    "xterm": "^5.3.0",
+    "@xterm/addon-fit": "^0.11.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "electron": "^36.2.1",
+    "vite": "^7.1.3"
+  }
+}
