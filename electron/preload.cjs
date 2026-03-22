@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld("myshell", {
   writeSession: (payload) => ipcRenderer.invoke("session:write", payload),
   resizeSession: (payload) => ipcRenderer.invoke("session:resize", payload),
   closeSession: (id) => ipcRenderer.invoke("session:close", id),
+  listHosts: () => ipcRenderer.invoke("hosts:list"),
+  saveHost: (host) => ipcRenderer.invoke("hosts:save", host),
+  removeHost: (id) => ipcRenderer.invoke("hosts:remove", id),
   pickPrivateKey: async () => {
     const file = await ipcRenderer.invoke("dialog:pick-key");
     if (!file) {

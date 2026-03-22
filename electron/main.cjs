@@ -1,9 +1,11 @@
 const path = require("node:path");
+const fs = require("node:fs/promises");
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const { Client } = require("ssh2");
 
 const sessions = new Map();
 const isDev = !app.isPackaged;
+let hostsFilePath = "";
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -30,6 +32,36 @@ function sessionData(eventName, payload) {
   for (const window of BrowserWindow.getAllWindows()) {
     window.webContents.send(eventName, payload);
   }
+}
+
+async function ensureHostsFile() {
+  if (!hostsFilePath) {
+    hostsFilePath = path.join(app.getPath("userData"), "hosts.json");
+  }
+
+  try {
+    await fs.access(hostsFilePath);
+  } catch {
+    await fs.mkdir(path.dirname(hostsFilePath), { recursive: true });
+    await fs.writeFile(hostsFilePath, "[]", "utf8");
+  }
+}
+
+async function readHosts() {
+  await ensureHostsFile();
+
+  try {
+    const content = await fs.readFile(hostsFilePath, "utf8");
+    const data = JSON.parse(content);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
+async function writeHosts(hosts) {
+  await ensureHostsFile();
+  await fs.writeFile(hostsFilePath, JSON.stringify(hosts, null, 2), "utf8");
 }
 
 function validateConfig(config) {
@@ -176,6 +208,45 @@ ipcMain.handle("dialog:pick-key", async () => {
   }
 
   return result.filePaths[0];
+});
+
+ipcMain.handle("hosts:list", async () => {
+  return await readHosts();
+});
+
+ipcMain.handle("hosts:save", async (_event, host) => {
+  if (!host.host || !host.username) {
+    throw new Error("保存主机时 host 和 username 不能为空");
+  }
+
+  const hosts = await readHosts();
+  const now = new Date().toISOString();
+  const next = {
+    id: host.id || `host-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    name: host.name || `${host.username}@${host.host}`,
+    host: host.host,
+    port: Number(host.port) || 22,
+    username: host.username,
+    privateKeyPath: host.privateKeyPath || "",
+    updatedAt: now
+  };
+  const index = hosts.findIndex((item) => item.id === next.id);
+
+  if (index >= 0) {
+    hosts[index] = next;
+  } else {
+    hosts.unshift(next);
+  }
+
+  await writeHosts(hosts);
+  return next;
+});
+
+ipcMain.handle("hosts:remove", async (_event, id) => {
+  const hosts = await readHosts();
+  const next = hosts.filter((item) => item.id !== id);
+  await writeHosts(next);
+  return true;
 });
 
 app.whenReady().then(() => {

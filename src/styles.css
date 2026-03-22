@@ -121,6 +121,21 @@ input {
   color: var(--text);
 }
 
+.checkbox-row {
+  grid-template-columns: 18px 1fr;
+  align-items: center;
+}
+
+.checkbox-row input {
+  height: 18px;
+  width: 18px;
+  margin: 0;
+}
+
+.checkbox-row span {
+  font-size: 14px;
+}
+
 .key-row {
   display: grid;
   grid-template-columns: 1fr 72px;
@@ -149,10 +164,75 @@ input {
 }
 
 .hint,
-.status {
+.status,
+.saved-hosts {
   border-radius: 16px;
   border: 1px solid var(--line);
   background: var(--panel-2);
+}
+
+.saved-hosts {
+  padding: 14px;
+}
+
+.section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.section-head .ghost {
+  height: 32px;
+  padding: 0 12px;
+}
+
+.host-list {
+  display: grid;
+  gap: 10px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+.host-empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 8px 2px;
+}
+
+.host-card {
+  display: grid;
+  grid-template-columns: 1fr 36px;
+  gap: 8px;
+}
+
+.host-main,
+.host-delete {
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(15, 23, 42, 0.78);
+  color: var(--text);
+}
+
+.host-main {
+  text-align: left;
+  padding: 12px;
+}
+
+.host-main strong,
+.host-main span {
+  display: block;
+}
+
+.host-main span {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.host-delete {
+  font-size: 20px;
 }
 
 .hint {
@@ -241,5 +321,9 @@ input {
 
   .sidebar {
     border-radius: 20px;
+  }
+
+  .host-list {
+    max-height: none;
   }
 }

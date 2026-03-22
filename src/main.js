@@ -7,7 +7,8 @@ const app = document.querySelector("#app");
 
 const state = {
   sessions: new Map(),
-  activeId: null
+  activeId: null,
+  hosts: []
 };
 
 app.innerHTML = `
@@ -22,6 +23,10 @@ app.innerHTML = `
       </div>
 
       <form class="connect-form" id="connect-form">
+        <label>
+          <span>会话名称</span>
+          <input name="name" placeholder="生产环境 / Web01" />
+        </label>
         <label>
           <span>主机</span>
           <input name="host" placeholder="192.168.1.10" required />
@@ -45,8 +50,22 @@ app.innerHTML = `
             <button type="button" id="pick-key" class="ghost">选择</button>
           </div>
         </label>
+        <label class="checkbox-row">
+          <input name="saveHost" type="checkbox" checked />
+          <span>保存到快速连接</span>
+        </label>
         <button class="primary" type="submit">连接 SSH</button>
       </form>
+
+      <section class="saved-hosts">
+        <div class="section-head">
+          <strong>快速连接</strong>
+          <button type="button" id="refresh-hosts" class="ghost">刷新</button>
+        </div>
+        <div id="host-list" class="host-list">
+          <div class="host-empty">还没有保存的主机</div>
+        </div>
+      </section>
 
       <div class="hint">
         <strong>说明</strong>
@@ -73,12 +92,54 @@ const tabsEl = document.querySelector("#tabs");
 const terminalStackEl = document.querySelector("#terminal-stack");
 const keyPathEl = document.querySelector("#key-path");
 const pickKeyBtn = document.querySelector("#pick-key");
+const hostListEl = document.querySelector("#host-list");
+const refreshHostsBtn = document.querySelector("#refresh-hosts");
 
 let selectedPrivateKey = null;
+
+function escapeHtml(value) {
+  return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
 
 function setStatus(message, type = "normal") {
   statusEl.textContent = message;
   statusEl.dataset.type = type;
+}
+
+function renderHosts() {
+  if (state.hosts.length === 0) {
+    hostListEl.innerHTML = `<div class="host-empty">还没有保存的主机</div>`;
+    return;
+  }
+
+  hostListEl.innerHTML = state.hosts
+    .map((host) => `
+      <article class="host-card" data-host-id="${host.id}">
+        <button class="host-main" data-connect-host="${host.id}">
+          <strong>${escapeHtml(host.name || `${host.username}@${host.host}`)}</strong>
+          <span>${escapeHtml(`${host.username}@${host.host}:${host.port || 22}`)}</span>
+        </button>
+        <button class="host-delete" data-delete-host="${host.id}" title="删除">×</button>
+      </article>
+    `)
+    .join("");
+}
+
+async function loadHosts() {
+  state.hosts = await window.myshell.listHosts();
+  renderHosts();
+}
+
+function fillForm(host) {
+  connectForm.elements.name.value = host.name || "";
+  connectForm.elements.host.value = host.host || "";
+  connectForm.elements.port.value = host.port || 22;
+  connectForm.elements.username.value = host.username || "";
+  connectForm.elements.password.value = "";
+  connectForm.elements.saveHost.checked = true;
+
+  selectedPrivateKey = null;
+  keyPathEl.value = host.privateKeyPath || "";
 }
 
 function renderTabs() {
@@ -238,15 +299,32 @@ connectForm.addEventListener("submit", async (event) => {
   setStatus("正在建立 SSH 连接...", "working");
 
   try {
-    const session = await window.myshell.createSshSession({
+    const payload = {
+      name: String(form.get("name") || "").trim(),
       host: String(form.get("host") || "").trim(),
       port: String(form.get("port") || "22").trim(),
       username: String(form.get("username") || "").trim(),
       password: String(form.get("password") || ""),
       privateKey: selectedPrivateKey?.content || ""
+    };
+
+    const session = await window.myshell.createSshSession({
+      ...payload
     });
 
     createTerminalView(session);
+
+    if (form.get("saveHost")) {
+      await window.myshell.saveHost({
+        name: payload.name || `${payload.username}@${payload.host}`,
+        host: payload.host,
+        port: payload.port,
+        username: payload.username,
+        privateKeyPath: keyPathEl.value.trim()
+      });
+      await loadHosts();
+    }
+
     setStatus(`已连接 ${session.name}`, "success");
   } catch (error) {
     setStatus(`连接失败: ${error.message}`, "error");
@@ -265,6 +343,34 @@ tabsEl.addEventListener("click", async (event) => {
   if (tab?.dataset.id) {
     setActiveSession(tab.dataset.id);
   }
+});
+
+hostListEl.addEventListener("click", async (event) => {
+  const deleteId = event.target.dataset.deleteHost;
+  if (deleteId) {
+    await window.myshell.removeHost(deleteId);
+    await loadHosts();
+    setStatus("已删除保存的主机", "normal");
+    return;
+  }
+
+  const connectId = event.target.closest("[data-connect-host]")?.dataset.connectHost;
+  if (!connectId) {
+    return;
+  }
+
+  const host = state.hosts.find((item) => item.id === connectId);
+  if (!host) {
+    return;
+  }
+
+  fillForm(host);
+  setStatus(`已载入 ${host.name}`, "normal");
+});
+
+refreshHostsBtn.addEventListener("click", async () => {
+  await loadHosts();
+  setStatus("已刷新主机列表", "normal");
 });
 
 window.myshell.onSessionData(({ id, data }) => {
@@ -302,3 +408,5 @@ window.addEventListener("resize", () => {
     rows: active.term.rows
   });
 });
+
+void loadHosts();
