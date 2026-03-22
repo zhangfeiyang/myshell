@@ -68,12 +68,16 @@ npm run start
 
 ### 方式 2：生成 Windows 安装包
 
-这个项目已经配置好 `electron-builder`，会生成 `NSIS` 安装包。
+这个项目已经配置好 `electron-builder`，会生成两种 Windows 产物：
+
+- `NSIS` 安装包：适合普通安装分发
+- `Portable` 单文件：适合免安装使用
 
 请在 **Windows 本机** 执行：
 
 ```bash
 npm install
+npm run release:check
 npm run dist:win
 ```
 
@@ -86,10 +90,28 @@ release/
 典型文件名类似：
 
 ```bash
-MyShell-Setup-0.1.0.exe
+MyShell-Setup-0.1.0-x64.exe
+MyShell-Portable-0.1.0-x64.exe
 ```
 
-双击安装后即可像普通 Windows 软件一样使用。
+双击 `Setup` 安装包即可像普通 Windows 软件一样使用，`Portable` 可直接拷贝运行。
+
+### 发布前建议
+
+- 在 Windows 10/11 x64 上实际运行一遍安装包
+- 测试密码登录和私钥登录
+- 检查 Windows Defender 是否误报
+- 如果正式对外分发，建议补充代码签名证书
+
+### 安装器素材
+
+项目已内置基础安装器资源：
+
+- [icon.ico](/root/myshell/buildResources/icon.ico)
+- [installerSidebar.bmp](/root/myshell/buildResources/installerSidebar.bmp)
+- [uninstallerSidebar.bmp](/root/myshell/buildResources/uninstallerSidebar.bmp)
+
+你后面可以直接替换这些文件，保持同名即可。
 
 ### 为什么建议在 Windows 上打包
 

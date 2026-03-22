@@ -9,14 +9,16 @@
     "electron": "electron .",
     "start": "concurrently -k \"npm:dev\" \"npm:electron\"",
     "build:web": "vite build",
+    "build:assets": "python3 scripts/generate_release_assets.py",
     "build": "npm run build:web",
-    "pack": "npm run build:web && electron-builder --dir",
-    "dist:win": "npm run build:web && electron-builder --win nsis"
+    "pack": "npm run build:assets && npm run build:web && electron-builder --dir",
+    "dist:win": "npm run build:assets && npm run build:web && electron-builder --win nsis portable",
+    "release:check": "node scripts/check-release.mjs"
   },
   "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
     "ssh2": "^1.15.0",
-    "xterm": "^5.3.0",
-    "@xterm/addon-fit": "^0.11.0"
+    "xterm": "^5.3.0"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
@@ -27,8 +29,12 @@
   "build": {
     "appId": "com.zhangfeiyang.myshell",
     "productName": "MyShell",
+    "asar": true,
+    "compression": "maximum",
+    "executableName": "MyShell",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "buildResources"
     },
     "files": [
       "dist/**/*",
@@ -36,9 +42,18 @@
       "package.json"
     ],
     "win": {
+      "icon": "buildResources/icon.ico",
+      "publisherName": "zhangfeiyang",
+      "requestedExecutionLevel": "asInvoker",
       "target": [
         {
           "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
           "arch": [
             "x64"
           ]
@@ -48,7 +63,19 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "MyShell",
+      "uninstallDisplayName": "MyShell",
+      "installerIcon": "buildResources/icon.ico",
+      "uninstallerIcon": "buildResources/icon.ico",
+      "installerHeaderIcon": "buildResources/icon.ico",
+      "installerSidebar": "buildResources/installerSidebar.bmp",
+      "uninstallerSidebar": "buildResources/uninstallerSidebar.bmp",
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
     }
   }
 }
